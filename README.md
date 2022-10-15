@@ -7,7 +7,7 @@ Wrapper classes and APIs for building object-oriented WordPress plugins.
 # Installation
 `composer require pluginpress/pluginpressapi`
 ### Should be run inside your plugin folder (wp-content/plugins/YOUR_PLUGIN_NAME).
-### If you use PluginPress to create your project, you don't have to do this. PluginPress includes PluginPress APIs by default.
+#### If you use PluginPress to create your project, you don't have to do this. PluginPress includes PluginPress APIs by default.
 
 ## Author
 * Web - https://iamprogrammer.lk
