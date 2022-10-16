@@ -13,10 +13,10 @@ if(!defined('WPINC'))
 class PluginOptions
 {
     private $plugin_options = [];
-
+    
     public function __construct(
         private string $plugin_file_path,
-        private string $config_file_path
+        private string $config_file_path,
     )
     {
         if(empty($plugin_file_path) || !file_exists($plugin_file_path))
