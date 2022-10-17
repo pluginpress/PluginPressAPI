@@ -45,12 +45,12 @@ class PluginActivator
             $this->deactivation_hook_class->init();
         }
     }
-    public function set_activation_hook($activation_hook_class) : void
+    public function set_activation_hook(object $activation_hook_class) : void
     {
         $this->activation_hook_class = $activation_hook_class;
     }
 
-    public function set_deactivation_hook($deactivation_hook_class) : void
+    public function set_deactivation_hook(object $deactivation_hook_class) : void
     {
         $this->deactivation_hook_class = $deactivation_hook_class;
     }

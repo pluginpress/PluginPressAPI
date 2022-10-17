@@ -13,7 +13,7 @@ if(!defined('WPINC'))
 class PluginOptions
 {
     private $plugin_options = [];
-    
+
     public function __construct(
         private string $plugin_file_path,
         private string $config_file_path,
@@ -90,7 +90,7 @@ class PluginOptions
         return array_merge($required_plugin_data, $plugin_meta_data, $custom_plugin_options);
     }
 
-    function get_plugin_options() : array
+    public function get_plugin_options() : array
     {
         return $this->plugin_options;
     }
@@ -107,6 +107,7 @@ class PluginOptions
             throw new Exception("Trying to access an undefined plugin option. add '$option_name' and 'VALUE' to your plugin config file.");
         }
     }
+
     // TODO: Implement the set option function
     // public function set(string $option_name, mixed $option_value = null)
     // {
@@ -114,9 +115,7 @@ class PluginOptions
             
         //     $current_plugin_options[$option_name] = $option_value ;
         // }
-
         // );
-
         // $this->plugin_options[ $option_name ] = $option_value ;
         // return $this->get( $option_name );
     // }
