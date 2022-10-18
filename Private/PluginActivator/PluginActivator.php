@@ -20,6 +20,7 @@ class PluginActivator
 
     public function __construct(protected PluginOptions $plugin_options)
     {
+        $this->init();
     }
 
     public function init() : void

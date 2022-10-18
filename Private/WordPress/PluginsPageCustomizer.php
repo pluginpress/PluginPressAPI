@@ -14,6 +14,7 @@ class PluginsPageCustomizer
 {
     public function __construct(private PluginOptions $plugin_options)
     {
+        $this->init();
     }
 
     public function init() : void
