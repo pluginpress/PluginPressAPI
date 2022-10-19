@@ -5,7 +5,7 @@ namespace PluginPress\PluginPressAPI;
 use PluginPress\PluginPressAPI\PluginOptions\PluginOptions;
 use PluginPress\PluginPressAPI\PluginActivator\PluginActivator;
 use PluginPress\PluginPressAPI\WordPress\PluginsPageCustomizer;
-use PluginPress\PluginPressAPI\Admin\AdminPages;
+use PluginPress\PluginPressAPI\Admin\DashboardPages;
 
 // If this file is called directly, abort. for the security purpose.
 if(!defined('WPINC'))
@@ -28,7 +28,7 @@ class PluginPressAPI
         $this->plugin_options = new PluginOptions(plugin_file_path : $plugin_file_path, config_file_path : $config_file_path);
         $this->plugin_activator = new PluginActivator(plugin_options : $this->plugin_options);
         $this->plugins_page_customizer = new PluginsPageCustomizer(plugin_options : $this->plugin_options);
-        $this->dashboard_pages = new AdminPages(plugin_options : $this->plugin_options);
+        $this->dashboard_pages = new DashboardPages(plugin_options : $this->plugin_options);
 
 
 
@@ -36,7 +36,7 @@ class PluginPressAPI
 
 
         // print('<pre>');
-        // var_dump($this->plugin_options);
+        // var_dump($this->dashboard_pages);
         // print('</pre>');
         // die;
         

@@ -1,0 +1,60 @@
+
+.pluginpress_tooltip
+{
+  position: relative;
+  display: inline-block;
+  cursor: help;
+}
+
+.pluginpress_tooltip
+.pluginpress_tooltip_text
+{
+  font-size: 85%;
+  visibility: hidden;
+  background-color: #3c434a;
+  color: #fff;
+  text-align: center;
+  padding: 6px 6px;
+  border-radius: 6px;
+  position: absolute;
+  z-index: 1;
+  width: 200px;
+  bottom: 100%;
+  left: 50%;
+  margin-left: -100px;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+.pluginpress_tooltip
+.pluginpress_tooltip_text::after
+{
+  content: " ";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #3c434a transparent transparent transparent;
+}
+
+.pluginpress_tooltip:hover
+.pluginpress_tooltip_text
+{
+  visibility: visible;
+  opacity: 1;
+}
+
+/* .bg
+{
+  border-bottom: #dcdcde solid 1px;
+}
+.bg label
+{
+  padding-left: 5px;
+}
+.bg input
+{
+  background-color: sandybrown;
+} */
