@@ -1,0 +1,380 @@
+<?php
+
+namespace PluginPress\PluginPressAPI\Admin;
+
+use PluginPress\PluginPressAPI\PluginOptions\PluginOptions;
+use PluginPress\PluginPressAPI\Traits\Utilities;
+
+// If this file is called directly, abort. for the security purpose.
+if(!defined('WPINC'))
+{
+    die;
+}
+
+class DashboardSettings
+{
+    use DashboardUI;
+    use Utilities;
+
+    protected $tabs = [];
+    protected $sections = [];
+    protected $options = [];
+    
+    public function __construct(private PluginOptions $plugin_options)
+    {
+    }
+
+    public function init()
+    {
+        if(!empty($this->tabs))
+        {
+            add_action('admin_init', array($this, 'register_tabs'), 11);
+        }
+        if(!empty($this->sections))
+        {
+            add_action('admin_init', array($this, 'register_sections'), 12);
+        }
+        if(!empty($this->options))
+        {
+            add_action('admin_init', array($this, 'register_options'), 13);
+        }
+    }
+
+    public function add_tab(
+        string $tab_parent_page_slug,                                           // required - 
+        string $tab_slug,                                                       // required - 
+        string $tab_title,                                                      // required - 
+        string $tab_description                     = '',
+        bool $tab_default                           = false,
+    ) : void
+    {
+        $tab = [
+            'tab_parent_page_slug'      => $this->get_clean_slug($tab_parent_page_slug),
+            'tab_slug'                  => $this->get_clean_slug($tab_parent_page_slug) . '_' . $tab_slug,
+            'tab_title'                 => $tab_title,
+            'tab_default'               => $tab_default,
+            'tab_description'           => $tab_description,
+        ];
+        array_push($this->tabs, $tab);
+        $this->init();
+    }
+    public function register_tabs() : void
+    {
+        // NO need this :D
+    }
+
+    public function add_section(
+        string $section_parent_page_slug,                                       // required - 
+        string $section_slug,                                                   // required - 
+        string $section_parent_tab_slug             = '',
+        string $section_title                       = '',
+        string $section_description                 = '',
+        string $section_ui                          = null,
+    ) : void
+    {
+        $section_parent_page_slug = $this->get_clean_slug($section_parent_page_slug);
+        $section_parent_tab_slug = $section_parent_tab_slug == '' ? $section_parent_page_slug : $section_parent_page_slug . '_' . $section_parent_tab_slug;
+        $section = [
+            'section_parent_page_slug'      => $section_parent_page_slug,
+            'section_slug'                  => $section_parent_page_slug . '_' . $section_slug,
+            'section_parent_tab_slug'       => $section_parent_tab_slug,
+            'section_title'                 => $section_title,
+            'section_description'           => $section_description,
+            'section_ui'                    => $section_ui,
+        ];
+        array_push($this->sections, $section);
+        $this->init();
+    }
+
+    public function register_sections() : void
+    {
+        foreach($this->sections as $section)
+        {
+            add_settings_section(
+                id          : $section['section_slug'],
+                title       : $section['section_title'],
+                callback    : $section['section_ui'],
+                page        : $section['section_parent_page_slug'],
+            );
+        }
+    }
+
+    public function add_option(
+        string $option_parent_page_slug,                                        // required - 
+        string $option_slug,                                                    // required - 
+        string $option_title,                                                   // required - 
+        bool $option_hidden                         = false,
+        bool $option_checked                        = false,
+        bool $option_disabled                       = false,
+        bool $option_required                       = false,
+        bool $option_readonly                       = false,
+        bool $option_show_in_rest                   = false,
+        bool $option_default_value                  = false,
+        bool $option_content_editable               = false,
+        string $option_ui                           = '',
+        string $option_min                          = '',
+        string $option_max                          = '',
+        string $option_list                         = '',
+        string $option_type                         = 'text',
+        string $option_style                        = '',
+        string $option_class                        = '',
+        string $option_label_for                    = '',
+        string $option_data_type                    = 'string',
+        string $option_max_length                   = '',
+        string $option_min_length                   = '',
+        string $option_placeholder                  = 'Enter option here',
+        string $option_description                  = '',
+        string $option_parent_tab_slug              = '',
+        string $option_parent_section_slug          = '',
+        string | array $option_sanitize_callback    = null,
+    ) : void
+    {
+        $option_parent_page_slug    = $this->get_clean_slug($option_parent_page_slug);
+        $option_ui_template         = '';
+        if(!is_array($option_ui) && is_file($option_ui))
+        {
+            $option_ui_template = $option_ui;
+            $option_ui          = [$this, 'render_options'];
+        }
+        $option = [
+            'option_parent_page_slug'       => $option_parent_page_slug,
+            'option_slug'                   => $option_parent_page_slug . '_' . $option_slug,
+            'option_title'                  => $option_title,
+            'option_hidden'                 => $option_hidden,
+            'option_checked'                => $option_checked,
+            'option_disabled'               => $option_disabled,
+            'option_required'               => $option_required,
+            'option_readonly'               => $option_readonly,
+            'option_show_in_rest'           => $option_show_in_rest,
+            'option_default_value'          => $option_default_value,
+            'option_content_editable'       => $option_content_editable,
+            'option_ui'                     => $option_ui == '' ? [$this, 'render_options'] : $option_ui,
+            'option_min'                    => $option_min,
+            'option_max'                    => $option_max,
+            'option_list'                   => $option_list,
+            'option_type'                   => $option_type,
+            'option_style'                  => $option_style,
+            'option_class'                  => $option_class,
+            'option_label_for'              => $option_label_for == '' ? $option_parent_page_slug . '_' . $option_slug : $option_parent_page_slug . '_' . $option_label_for,
+            'option_data_type'              => $option_data_type,
+            'option_max_length'             => $option_max_length,
+            'option_min_length'             => $option_min_length,
+            'option_placeholder'            => $option_placeholder,
+            'option_description'            => $option_description,
+            'option_parent_tab_slug'        => $option_parent_tab_slug == '' ? $option_parent_page_slug : $option_parent_page_slug . '_' . $option_parent_tab_slug,
+            'option_parent_section_slug'    => $option_parent_section_slug == '' ? 'default' : $option_parent_page_slug . '_' . $option_parent_section_slug,
+            'option_sanitize_callback'      => $option_sanitize_callback == null ? [$this, 'option_sanitize_callback'] : $option_sanitize_callback, 
+            'option_ui_template'            => $option_ui_template,
+        ];
+        array_push($this->options, $option);
+        $this->init();
+    }
+
+    public function register_options() : void
+    {
+        foreach($this->options as $option)
+        {
+            register_setting(
+                option_group    : $option['option_parent_section_slug'],
+                option_name     : $option['option_slug'],
+                args  : [
+                    'type'              => $option['option_data_type'],
+                    'description'       => $option['option_description'],
+                    'sanitize_callback' => $option['option_sanitize_callback'],
+                    'show_in_rest'      => $option['option_show_in_rest'],
+                    'default'           => $option['option_default_value'],
+                ]
+            );
+            add_settings_field(
+                id          : $option['option_slug'],
+                title       : $option['option_title'],
+                callback    : $option['option_ui'],
+                page        : $option['option_parent_page_slug'],
+                section     : $option['option_parent_section_slug'],
+                args        : $option
+            );
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    protected function get_current_page_tabs(array $current_page) : array | bool
+    {
+        if(empty($this->tabs))
+        {
+            return false; // no tabs for any page.
+        }
+        $page_tabs = [];
+        foreach($this->tabs as $tab)
+        {
+            if($tab['tab_parent_page_slug'] == $current_page['page_slug'])
+            {
+                array_push($page_tabs, $tab);
+            }
+        }
+        if(empty($page_tabs))
+        {
+            return false; // no tabs for current page.
+        }
+        return $page_tabs;
+    }
+
+    protected function get_registered_page_sections(array $page) : array | bool
+    {
+        global $wp_settings_sections;
+        if(!isset($wp_settings_sections[$page['page_slug']]))
+        {
+            // This page don't have registered settings.
+            return false; 
+        }
+        $page_sections = [];
+        foreach($this->sections as $section)
+        {
+            if($section['section_parent_page_slug'] == $page['page_slug'])
+            {
+                array_push($page_sections, $section);
+            }
+        }
+        if(empty($page_sections))
+        {
+            // current page don't have settings.
+            return false; 
+        }
+        return $page_sections;
+    }
+
+    protected function get_current_page_options(array $current_page) : array
+    {
+        $page_options = [];
+        foreach($this->options as $option)
+        {
+            if($option['option_parent_page_slug'] == $current_page['page_slug'])
+            {
+                array_push($page_options, $option);
+            }
+        }
+        return $page_options;
+    }
+
+
+
+
+
+    protected function get_active_tab(array $page_tabs) : array | bool
+    {
+        $active_tab_slug = (isset($_GET['tab']) ? $_GET['tab'] : null);
+        $active_tab = [];
+        if(empty($page_tabs))
+        {
+            return false;
+        }
+        if($active_tab_slug == null)
+        {
+            foreach($page_tabs as $tab)
+            {
+                if(isset($tab['tab_default']) && $tab['tab_default'] == true)
+                {
+                    $active_tab = $tab;
+                }
+            }
+            if(empty($active_tab))
+            {
+                // If no default tab is defined, first tab will set as a default tab
+                $active_tab = $page_tabs[0];
+            }
+        }
+        else
+        {
+            foreach($page_tabs as $tab)
+            {
+                if($tab['tab_slug'] == $active_tab_slug)
+                {
+                    $active_tab = $tab;
+                }
+            }
+        }
+        return $active_tab;
+    }
+
+
+
+
+
+
+    // protected function get_tab_setting_sections($current_page, $current_tab)
+    // {
+        // global $wp_settings_sections;
+        // if(!isset($wp_settings_sections[$current_page['page_slug']]))
+        // {
+        //     return;
+        // }
+        // print('<pre>');
+        // var_dump($current_tab);
+        // print('</pre>');
+        // die;
+        // foreach($this->sections as $section)
+        // {
+
+            // if(!$active_tab['tab_slug'] == $section['section_parent_tab_slug'])
+            // {
+            //     continue;
+            // }
+
+            // foreach((array) $wp_settings_sections[$current_page['page_slug']] as $registered_section)
+            // {
+            //     if($section['section_slug'] == $registered_section['id'])
+            //     {
+            //         // HOOK: Filter before_section_render_{SECTION_SLUG}
+            //         $section = apply_filters('before_section_render_' . $section['section_slug'] , $section);
+            //         // TODO: $section['section_enabled'] == false ? continue; : null;
+
+            //         echo '<h2>';
+            //         // HOOK: Action - before_section_title_render_{SECTION_SLUG}
+            //         do_action('before_section_title_render_' . $section['section_slug']);
+            //         echo $section['section_title'];
+            //         // HOOK: Action - after_section_title_render_{SECTION_SLUG}
+            //         do_action('after_section_title_render_' . $section['section_slug']);
+            //         echo '</h2>';
+            //         if(isset($section['section_ui']))
+            //         {
+            //             \is_array($section['section_ui']) ? call_user_func($section['section_ui'], $section) : null;
+            //             \is_file($section['section_ui']) ? include_once $section['section_ui'] : null;
+            //             \is_string($section['section_ui']) ? printf($section['section_ui']) : null;
+            //         }
+            //         else
+            //         {
+            //             echo '<p>' . $section['section_description'] . '</p>';
+            //         }
+            //         if(
+            //             !isset($wp_settings_fields) ||
+            //             !isset($wp_settings_fields[$current_page['page_slug']]) ||
+            //             !isset($wp_settings_fields[$current_page['page_slug']][$section['section_slug']])
+            //         )
+            //         {
+            //             continue;
+            //         }
+            //         echo '<table class="form-table" role="presentation">';
+            //         $this->render_settings_fields($current_page['page_slug'], $section['section_slug']);
+            //         echo '</table>';
+            //     }
+            // }
+        // }
+
+    // }
+
+    // TODO: implement the user input data sanitization function for input fields
+    public function option_sanitize_callback($data)
+    {
+        return $data;
+    }
+
+}

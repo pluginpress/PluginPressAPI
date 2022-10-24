@@ -11,7 +11,7 @@ if(!defined('WPINC'))
     die;
 }
 
-class DashboardPages // extends AdminSettings
+class DashboardPages extends DashboardSettings
 {
     use DashboardUI;
     use Utilities;
@@ -23,7 +23,7 @@ class DashboardPages // extends AdminSettings
 
     public function __construct(private PluginOptions $plugin_options)
     {
-        // parent::__construct($plugin_options);
+        parent::__construct($plugin_options);
     }
 
     public function init()
@@ -40,8 +40,7 @@ class DashboardPages // extends AdminSettings
         {
             add_action('admin_menu', array($this, 'register_submenu_pages'), 40);
         }
-
-        // parent::init();
+        parent::init();
     }
 
     public function add_option_page(
@@ -54,12 +53,12 @@ class DashboardPages // extends AdminSettings
         int $page_position          = 10,
     ) : void
     {
-        $page_ui = $page_ui == '' ? [$this, 'render_dashboard_page'] : $page_ui;
-        $page_ui_template = '';
+        $page_ui                = $page_ui == '' ? [$this, 'render_dashboard_page'] : $page_ui;
+        $page_ui_template       = '';
         if(!is_array($page_ui) && is_file($page_ui))
         {
-            $page_ui_template = $page_ui;
-            $page_ui = [$this, 'render_dashboard_page'];
+            $page_ui_template   = $page_ui;
+            $page_ui            = [$this, 'render_dashboard_page'];
         }
         $option_page = [
             'page_slug'             => $this->get_clean_slug($page_slug),
@@ -154,12 +153,12 @@ class DashboardPages // extends AdminSettings
         int $page_position          = 10,
     ) : void
     {
-        $page_ui = $page_ui == '' ? [$this, 'render_dashboard_page'] : $page_ui;
-        $page_ui_template = '';
+        $page_ui            = $page_ui == '' ? [$this, 'render_dashboard_page'] : $page_ui;
+        $page_ui_template   = '';
         if(!is_array($page_ui) && is_file($page_ui))
         {
-            $page_ui_template = $page_ui;
-            $page_ui = [$this, 'render_dashboard_page'];
+            $page_ui_template   = $page_ui;
+            $page_ui            = [$this, 'render_dashboard_page'];
         }
         $submenu_page = [
             'page_parent_slug'      => $this->get_clean_slug($page_parent_slug),
@@ -193,6 +192,7 @@ class DashboardPages // extends AdminSettings
             $this->_update_registered_pages($page);
         }
     }
+
 
 
 
