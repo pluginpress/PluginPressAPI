@@ -14,6 +14,7 @@ trait DashboardUI
 {
     public function render_dashboard_page() : void
     {
+
         $current_page = $this->get_current_page();
         if(!$current_page['page_ui_template'] == '' && \is_file($current_page['page_ui_template']))
         {
@@ -38,6 +39,38 @@ trait DashboardUI
         echo '</div>';
     }
 
+
+    // private function enqueue_on_page( $page ) : void
+    // {
+    //     // Prints in head section for a specific admin page.
+    //     if( isset( $page[ 'enqueue_on_page_head' ] ) && ! empty( $page[ 'enqueue_on_page_head' ] ) && is_array( $page[ 'enqueue_on_page_head' ] ) )
+    //     {
+    //         add_action(
+    //             'admin_head-' . $page[ 'page_hook_suffix' ],
+    //             function() use( $page )
+    //             {
+    //                 foreach( $page[ 'enqueue_on_page_head' ] as $script )
+    //                 {
+    //                     echo $script . '<br/>';
+    //                 }
+    //             } 
+    //         );
+    //     }
+    //     // Prints scripts or data after the default footer scripts.
+    //     if( isset( $page[ 'enqueue_on_page_footer' ] ) && ! empty( $page[ 'enqueue_on_page_footer' ] ) && is_array( $page[ 'enqueue_on_page_footer' ] ) )
+    //     {
+    //         add_action(
+    //             'admin_footer-' . $page[ 'page_hook_suffix' ],
+    //             function() use( $page )
+    //             {
+    //                 foreach( $page[ 'enqueue_on_page_footer' ] as $script )
+    //                 {
+    //                     echo $script . '<br/>';
+    //                 }
+    //             } 
+    //         );
+    //     }
+    // }
 
 
 

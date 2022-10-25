@@ -3,7 +3,6 @@
 namespace PluginPress\PluginPressAPI\Admin;
 
 use PluginPress\PluginPressAPI\PluginOptions\PluginOptions;
-use PluginPress\PluginPressAPI\Traits\Utilities;
 
 // If this file is called directly, abort. for the security purpose.
 if(!defined('WPINC'))
@@ -13,49 +12,75 @@ if(!defined('WPINC'))
 
 class DashboardPages extends DashboardSettings
 {
-    use DashboardUI;
-    use Utilities;
-
-    private $admin_option_pages = [];
-    private $admin_menu_pages = [];
-    private $admin_submenu_pages = [];
-    private $registered_pages = [];
+    private     $admin_option_pages     = [];
+    private     $admin_menu_pages       = [];
+    private     $admin_submenu_pages    = [];
+    private     $admin_enqueue_scripts  = [];
+    protected   $registered_pages       = [];
 
     public function __construct(private PluginOptions $plugin_options)
     {
         parent::__construct($plugin_options);
+        $this->_add_default_admin_enqueue_scripts();
     }
 
-    public function init()
+    public function init() : void
     {
         if(!empty($this->admin_option_pages))
         {
-            add_action('admin_menu', array($this,'register_option_pages'), 20);
+            add_action(
+                hook_name       : 'admin_menu',
+                callback        : array($this,'register_option_pages'),
+                priority        : 20,
+                accepted_args   : 1,
+            );
         }
         if(!empty($this->admin_menu_pages))
         {
-            add_action('admin_menu', array($this, 'register_menu_pages'), 30);
+            add_action(
+                hook_name       : 'admin_menu',
+                callback        : array($this, 'register_menu_pages'),
+                priority        : 30,
+                accepted_args   : 1,
+            );
         }
         if(!empty($this->admin_submenu_pages))
         {
-            add_action('admin_menu', array($this, 'register_submenu_pages'), 40);
+            add_action(
+                hook_name       : 'admin_menu',
+                callback        : array($this, 'register_submenu_pages'),
+                priority        : 40,
+                accepted_args   : 1,
+            );
+        }
+        if(!empty($this->admin_enqueue_scripts))
+        {
+            add_action(
+                hook_name       : 'admin_enqueue_scripts',
+                callback        : array($this, 'register_admin_enqueue_scripts'),
+                priority        : 10,
+                accepted_args   : 1,
+            );
         }
         parent::init();
     }
 
     public function add_option_page(
-        string $page_slug,                  // required - 
-        string $page_title,                 // required - 
-        string $page_ui             = '',   // default empty - valid callback function || absolute path to the template file.
-        string $page_menu_title     = '',
-        string $page_description    = '',
-        string $page_capabilities   = '',
-        int $page_position          = 10,
+        string              $page_slug,                  // required - 
+        string              $page_title,                 // required - 
+        int                 $page_position      = 10,
+        string              $page_menu_title    = '',
+        string              $page_description   = '',
+        string              $page_capabilities  = '',
+        string | callable   $page_ui            = '',   // default empty - valid callback function || absolute path to the template file.
     ) : void
     {
-        $page_ui                = $page_ui == '' ? [$this, 'render_dashboard_page'] : $page_ui;
-        $page_ui_template       = '';
-        if(!is_array($page_ui) && is_file($page_ui))
+        $page_ui_template = '';
+        if($page_ui == '')
+        {
+            $page_ui = [$this, 'render_dashboard_page'];
+        }
+        if(\is_string($page_ui) && is_file($page_ui))
         {
             $page_ui_template   = $page_ui;
             $page_ui            = [$this, 'render_dashboard_page'];
@@ -63,12 +88,12 @@ class DashboardPages extends DashboardSettings
         $option_page = [
             'page_slug'             => $this->get_clean_slug($page_slug),
             'page_title'            => $page_title,
-            'page_ui'               => $page_ui,
+            'page_position'         => $page_position,
             'page_menu_title'       => $page_menu_title == '' ? $page_title : $page_menu_title,
             'page_description'      => $page_description,
             'page_capabilities'     => $page_capabilities == '' ? 'manage_options' : $page_capabilities,
+            'page_ui'               => $page_ui,
             'page_ui_template'      => $page_ui_template,
-            'page_position'         => $page_position,
             'page_type'             => 'option_page',
         ];
         array_push($this->admin_option_pages, $option_page);
@@ -87,37 +112,40 @@ class DashboardPages extends DashboardSettings
                 callback        : $page['page_ui'],
                 position        : $page['page_position'],
             );
-            $this->_update_registered_pages($page);
+            $this->_update_registered_page_suffix($page);
         }
     }
 
     public function add_menu_page(
-        string $page_slug,                  // required - 
-        string $page_title,                 // required - 
-        string $page_ui             = '',   // default empty - valid callback function || absolute path to the template file.
-        string $page_icon_url       = '',
-        string $page_menu_title     = '',
-        string $page_description    = '',
-        string $page_capabilities   = '',
-        int $page_position          = 10,
+        string              $page_slug,                     // required - 
+        string              $page_title,                    // required - 
+        int                 $page_position          = 10,
+        string              $page_icon_url          = '',
+        string              $page_menu_title        = '',
+        string              $page_description       = '',
+        string              $page_capabilities      = '',
+        string | callable   $page_ui                = '',   // default empty - valid callback function || absolute path to the template file.
     ) : void
     {
-        $page_ui = $page_ui == '' ? [$this, 'render_dashboard_page'] : $page_ui;
         $page_ui_template = '';
-        if(!is_array($page_ui) && is_file($page_ui))
+        if($page_ui == '')
         {
-            $page_ui_template = $page_ui;
             $page_ui = [$this, 'render_dashboard_page'];
+        }
+        if(\is_string($page_ui) && is_file($page_ui))
+        {
+            $page_ui_template   = $page_ui;
+            $page_ui            = [$this, 'render_dashboard_page'];
         }
         $menu_page = [
             'page_slug'             => $this->get_clean_slug($page_slug),
             'page_title'            => $page_title,
-            'page_ui'               => $page_ui,
+            'page_position'         => $page_position,
             'page_icon_url'         => $page_icon_url == '' ? 'dashicons-admin-generic' : $page_icon_url,
             'page_menu_title'       => $page_menu_title == '' ? $page_title : $page_menu_title,
             'page_description'      => $page_description,
             'page_capabilities'     => $page_capabilities == '' ? 'manage_options' : $page_capabilities,
-            'page_position'         => $page_position,
+            'page_ui'               => $page_ui,
             'page_ui_template'      => $page_ui_template,
             'page_type'             => 'menu_page',
         ];
@@ -138,37 +166,40 @@ class DashboardPages extends DashboardSettings
                 icon_url        : $page['page_icon_url'],
                 position        : $page['page_position'],
             );
-            $this->_update_registered_pages($page);
+            $this->_update_registered_page_suffix($page);
         }
     }
 
     public function add_submenu_page(
-        string $page_parent_slug,           // required - 
-        string $page_slug,                  // required - 
-        string $page_title,                 // required - 
-        string $page_ui             = '',   // default empty - valid callback function || absolute path to the template file.
-        string $page_menu_title     = '',
-        string $page_description    = '',
-        string $page_capabilities   = '',
-        int $page_position          = 10,
+        string              $page_slug,                     // required - 
+        string              $page_title,                    // required - 
+        string              $page_parent_slug,              // required - 
+        int                 $page_position          = 10,
+        string              $page_menu_title        = '',
+        string              $page_description       = '',
+        string              $page_capabilities      = '',
+        string | callable   $page_ui                = '',   // default empty - valid callback function || absolute path to the template file.
     ) : void
     {
-        $page_ui            = $page_ui == '' ? [$this, 'render_dashboard_page'] : $page_ui;
-        $page_ui_template   = '';
-        if(!is_array($page_ui) && is_file($page_ui))
+        $page_ui_template = '';
+        if($page_ui == '')
+        {
+            $page_ui = [$this, 'render_dashboard_page'];
+        }
+        if(\is_string($page_ui) && is_file($page_ui))
         {
             $page_ui_template   = $page_ui;
             $page_ui            = [$this, 'render_dashboard_page'];
         }
         $submenu_page = [
-            'page_parent_slug'      => $this->get_clean_slug($page_parent_slug),
             'page_slug'             => $this->get_clean_slug($page_slug),
             'page_title'            => $page_title,
-            'page_ui'               => $page_ui,
+            'page_parent_slug'      => $this->get_clean_slug($page_parent_slug),
+            'page_position'         => $page_position,
             'page_menu_title'       => $page_menu_title == '' ? $page_title : $page_menu_title,
             'page_description'      => $page_description,
             'page_capabilities'     => $page_capabilities == '' ? 'manage_options' : $page_capabilities,
-            'page_position'         => $page_position,
+            'page_ui'               => $page_ui,
             'page_ui_template'      => $page_ui_template,
             'page_type'             => 'submenu_page',
         ];
@@ -189,89 +220,104 @@ class DashboardPages extends DashboardSettings
                 callback        : $page['page_ui'],
                 position        : $page['page_position']
             );
-            $this->_update_registered_pages($page);
+            $this->_update_registered_page_suffix($page);
         }
     }
 
+    public function add_admin_enqueue_scripts(
+        string      $enqueue_script_slug,
+        string      $enqueue_script_path,
+        string      $enqueue_script_type,
+        string      $page_slug              = '',
+        string      $enqueue_location       = 'top',
+    ) : void
+    {
+        $enqueue_script = [
+            'enqueue_script_slug'       => $this->get_clean_slug($enqueue_script_slug),
+            'enqueue_script_path'       => $enqueue_script_path,
+            'enqueue_script_type'       => $enqueue_script_type,
+            'page_slug'                 => $page_slug == '' ? 'default' : $page_slug,
+            'enqueue_location'          => $enqueue_location,
+        ];
+        array_push($this->admin_enqueue_scripts, $enqueue_script);
+        $this->init();
+        ;
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    public function register_admin_enqueue_scripts() : void
+    {
+        foreach($this->admin_enqueue_scripts as $enqueue_script)
+        {
+            foreach($this->registered_pages as $key => $page)
+            {
+                if($enqueue_script['page_slug'] == $page['page_slug'])
+                {
+                    $this->_update_registered_page_enqueue_scripts(current_page : $key, enqueue_script : $enqueue_script);
+                }
+                if($enqueue_script['page_slug'] == 'default')
+                {
+                    $this->_update_registered_page_enqueue_scripts(current_page : $key, enqueue_script : $enqueue_script);
+                }
+            }
+        }
+    }
 
     // user will redirected to the welcome page when plugin is activated.
     // If a plugin is silently activated (such as during an update, multisite, or multiple plugin activation), this does not redirect to the welcome page.
     public function add_plugin_welcome_page(
-        string $page_ui, // required - valid callback function || absolute path to the template file.
-        string $page_title = '',
-        string $page_menu_title = '',
-        bool $page_show_always = false,
+        string | callable   $page_ui,                       // required - valid callback function || absolute path to the template file.
+        string              $page_title         = '',
+        string              $page_menu_title    = '',
+        bool                $page_show_always   = false,
     ) : void
     {
         $this->add_submenu_page(
-                page_slug :'welcome_page',
-                page_title : $page_title == '' ? 'Welcome to ' . $this->plugin_options->get('plugin_title') : $page_title,
-                page_parent_slug : 'index.php',
-                page_menu_title : $page_menu_title == '' ? 'Welcome to ' . $this->plugin_options->get('plugin_title') : $page_menu_title,
-                page_ui : $page_ui,
+            page_slug           :'welcome_page',
+            page_title          : $page_title == '' ? 'Welcome to ' . $this->plugin_options->get('plugin_title') : $page_title,
+            page_parent_slug    : 'index.php',
+            page_menu_title     : $page_menu_title == '' ? 'Welcome to ' . $this->plugin_options->get('plugin_title') : $page_menu_title,
+            page_ui             : $page_ui,
         );
         if($page_show_always == false)
         {
             add_action(
-                'admin_head',
-                function()
-                {
-                    remove_submenu_page('index.php', $this->get_clean_slug('welcome_page'));
-                }
+                hook_name       : 'admin_head',
+                callback        : function()
+                    {
+                        remove_submenu_page('index.php', $this->get_clean_slug('welcome_page'));
+                    },
+                priority        : 10,
+                accepted_args   : 1,
             );
         }
         add_action(
-            'admin_init',
-            function()
-            {
-                if(isset($_GET['activate-multi']))
+            hook_name       : 'admin_init',
+            callback        : function()
                 {
+                    if(isset($_GET['activate-multi']))
+                    {
+                        return;
+                    }
+                    if(get_transient($this->plugin_options->get('plugin_slug') . '_welcome_page_auto_redirect') == true)
+                    {
+                        delete_transient($this->plugin_options->get('plugin_slug') . '_welcome_page_auto_redirect');
+                        wp_safe_redirect(admin_url('index.php?page=' . $this->get_clean_slug('welcome_page')));
+                        exit;
+                    }
                     return;
-                }
-                if(get_transient($this->plugin_options->get('plugin_slug') . '_welcome_page_auto_redirect') == true)
-                {
-                    delete_transient($this->plugin_options->get('plugin_slug') . '_welcome_page_auto_redirect');
-                    wp_safe_redirect(admin_url('index.php?page=' . $this->get_clean_slug('welcome_page')));
-                    exit;
-                }
-                return;
-            }
+                },
+            priority        : 10,
+            accepted_args   : 1,
         );
         $this->init();
     }
-
 
     public function get_registered_pages() : array
     {
         return $this->registered_pages;
     }
 
-    protected function get_current_page() : array
+    public function get_current_page() : array
     {
         $current_screen = get_current_screen();
         foreach($this->get_registered_pages() as $page)
@@ -284,7 +330,7 @@ class DashboardPages extends DashboardSettings
         return [];
     }
 
-    private function _update_registered_pages( $page ) : void
+    private function _update_registered_page_suffix(array $page) : void
     {
         if($page['page_hook_suffix'] == false)
         {
@@ -292,37 +338,43 @@ class DashboardPages extends DashboardSettings
             return;
         }
         array_push($this->registered_pages, $page);
-        // $this->enqueue_on_page( $page );
     }
-    // private function enqueue_on_page( $page ) : void
-    // {
-    //     // Prints in head section for a specific admin page.
-    //     if( isset( $page[ 'enqueue_on_page_head' ] ) && ! empty( $page[ 'enqueue_on_page_head' ] ) && is_array( $page[ 'enqueue_on_page_head' ] ) )
-    //     {
-    //         add_action(
-    //             'admin_head-' . $page[ 'page_hook_suffix' ],
-    //             function() use( $page )
-    //             {
-    //                 foreach( $page[ 'enqueue_on_page_head' ] as $script )
-    //                 {
-    //                     echo $script . '<br/>';
-    //                 }
-    //             } 
-    //         );
-    //     }
-    //     // Prints scripts or data after the default footer scripts.
-    //     if( isset( $page[ 'enqueue_on_page_footer' ] ) && ! empty( $page[ 'enqueue_on_page_footer' ] ) && is_array( $page[ 'enqueue_on_page_footer' ] ) )
-    //     {
-    //         add_action(
-    //             'admin_footer-' . $page[ 'page_hook_suffix' ],
-    //             function() use( $page )
-    //             {
-    //                 foreach( $page[ 'enqueue_on_page_footer' ] as $script )
-    //                 {
-    //                     echo $script . '<br/>';
-    //                 }
-    //             } 
-    //         );
-    //     }
-    // }
+
+    private function _update_registered_page_enqueue_scripts(int $current_page, array $enqueue_script) : void
+    {
+        if(!\array_key_exists('enqueue_on_page_head', $this->registered_pages[$current_page]))
+        {
+            $this->registered_pages[$current_page]['enqueue_on_page_head'] = [];
+        }
+        if(!\array_key_exists('enqueue_on_page_footer', $this->registered_pages[$current_page]))
+        {
+            $this->registered_pages[$current_page]['enqueue_on_page_footer'] = [];
+        }
+        if($enqueue_script['enqueue_location'] == 'top')
+        {
+            array_push($this->registered_pages[$current_page]['enqueue_on_page_head'], $enqueue_script);
+        }
+        if($enqueue_script['enqueue_location'] == 'bottom')
+        {
+            array_push($this->registered_pages[$current_page]['enqueue_on_page_footer'], $enqueue_script);
+        }
+    }
+
+    private function _add_default_admin_enqueue_scripts() : void
+    {
+        $this->add_admin_enqueue_scripts(
+            enqueue_script_slug : 'dashboard_ui',
+            enqueue_script_path : $this->plugin_options->get('plugin_dir_url') . 'vendor/pluginpress/pluginpressapi/Public/Assets/StyleSheets/DashboardUI.css',
+            enqueue_script_type : 'style',
+            page_slug           : 'default' ,
+            enqueue_location    : 'top',
+        );
+        $this->add_admin_enqueue_scripts(
+            enqueue_script_slug : 'dashboard_ui',
+            enqueue_script_path : $this->plugin_options->get('plugin_dir_url') . 'vendor/pluginpress/pluginpressapi/Public/Assets/JavaScripts/DashboardUI.js',
+            enqueue_script_type : 'script',
+            page_slug           : 'default' ,
+            enqueue_location    : 'bottom',
+        );
+    }
 }

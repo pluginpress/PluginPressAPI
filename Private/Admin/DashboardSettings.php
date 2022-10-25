@@ -16,9 +16,9 @@ class DashboardSettings
     use DashboardUI;
     use Utilities;
 
-    protected $tabs = [];
-    protected $sections = [];
-    protected $options = [];
+    protected       $tabs       = [];
+    protected       $sections   = [];
+    protected       $options    = [];
     
     public function __construct(private PluginOptions $plugin_options)
     {
@@ -28,59 +28,85 @@ class DashboardSettings
     {
         if(!empty($this->tabs))
         {
-            add_action('admin_init', array($this, 'register_tabs'), 11);
+            add_action(
+                hook_name       : 'admin_init',
+                callback        : array($this,'register_tabs'),
+                priority        : 11,
+                accepted_args   : 1,
+            );
         }
         if(!empty($this->sections))
         {
-            add_action('admin_init', array($this, 'register_sections'), 12);
+            add_action(
+                hook_name       : 'admin_init',
+                callback        : array($this,'register_sections'),
+                priority        : 12,
+                accepted_args   : 1,
+            );
         }
         if(!empty($this->options))
         {
-            add_action('admin_init', array($this, 'register_options'), 13);
+            add_action(
+                hook_name       : 'admin_init',
+                callback        : array($this,'register_options'),
+                priority        : 13,
+                accepted_args   : 1,
+            );
         }
     }
 
     public function add_tab(
-        string $tab_parent_page_slug,                                           // required - 
         string $tab_slug,                                                       // required - 
         string $tab_title,                                                      // required - 
+        string $tab_parent_page_slug,                                           // required - 
         string $tab_description                     = '',
         bool $tab_default                           = false,
     ) : void
     {
         $tab = [
-            'tab_parent_page_slug'      => $this->get_clean_slug($tab_parent_page_slug),
             'tab_slug'                  => $this->get_clean_slug($tab_parent_page_slug) . '_' . $tab_slug,
             'tab_title'                 => $tab_title,
-            'tab_default'               => $tab_default,
+            'tab_parent_page_slug'      => $this->get_clean_slug($tab_parent_page_slug),
             'tab_description'           => $tab_description,
+            'tab_default'               => $tab_default,
         ];
         array_push($this->tabs, $tab);
         $this->init();
     }
+
     public function register_tabs() : void
     {
-        // NO need this :D
+        // Creating global WP array variable to hold all the tabs. this variable dos'n include in WordPress by default. so it won't use by WordPress.
+        foreach($this->tabs as $tab)
+        {
+            $GLOBALS['wp_settings_tabs'][$tab['tab_parent_page_slug']][$tab['tab_slug']] = array(
+                'tab_slug'                  => $tab['tab_slug'],
+                'tab_title'                 => $tab['tab_title'],
+                'tab_parent_page_slug'      => $tab['tab_parent_page_slug'],
+                'tab_description'           => $tab['tab_description'],
+                'tab_default'               => $tab['tab_default'],
+            );
+        }
     }
 
     public function add_section(
-        string $section_parent_page_slug,                                       // required - 
         string $section_slug,                                                   // required - 
+        string $section_title,                                                  // required - 
+        string $section_parent_page_slug,                                       // required - 
         string $section_parent_tab_slug             = '',
-        string $section_title                       = '',
         string $section_description                 = '',
-        string $section_ui                          = null,
+        string $section_ui                  = '',
     ) : void
     {
         $section_parent_page_slug = $this->get_clean_slug($section_parent_page_slug);
         $section_parent_tab_slug = $section_parent_tab_slug == '' ? $section_parent_page_slug : $section_parent_page_slug . '_' . $section_parent_tab_slug;
         $section = [
-            'section_parent_page_slug'      => $section_parent_page_slug,
             'section_slug'                  => $section_parent_page_slug . '_' . $section_slug,
-            'section_parent_tab_slug'       => $section_parent_tab_slug,
             'section_title'                 => $section_title,
+            'section_parent_page_slug'      => $section_parent_page_slug,
+            'section_parent_tab_slug'       => $section_parent_tab_slug,
             'section_description'           => $section_description,
-            'section_ui'                    => $section_ui,
+            'section_ui'                    => $section_ui, // == '' ? [$this, 'render_section_header'] : $section_ui,
         ];
         array_push($this->sections, $section);
         $this->init();
@@ -100,9 +126,9 @@ class DashboardSettings
     }
 
     public function add_option(
-        string $option_parent_page_slug,                                        // required - 
         string $option_slug,                                                    // required - 
         string $option_title,                                                   // required - 
+        string $option_parent_page_slug,                                        // required - 
         bool $option_hidden                         = false,
         bool $option_checked                        = false,
         bool $option_disabled                       = false,
@@ -137,9 +163,9 @@ class DashboardSettings
             $option_ui          = [$this, 'render_options'];
         }
         $option = [
-            'option_parent_page_slug'       => $option_parent_page_slug,
             'option_slug'                   => $option_parent_page_slug . '_' . $option_slug,
             'option_title'                  => $option_title,
+            'option_parent_page_slug'       => $option_parent_page_slug,
             'option_hidden'                 => $option_hidden,
             'option_checked'                => $option_checked,
             'option_disabled'               => $option_disabled,
@@ -195,17 +221,6 @@ class DashboardSettings
             );
         }
     }
-
-
-
-
-
-
-
-
-
-
-
 
     protected function get_current_page_tabs(array $current_page) : array | bool
     {
