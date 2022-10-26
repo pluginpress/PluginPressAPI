@@ -56,11 +56,11 @@ class DashboardSettings
     }
 
     public function add_tab(
-        string $tab_slug,                                                       // required - 
-        string $tab_title,                                                      // required - 
-        string $tab_parent_page_slug,                                           // required - 
-        string $tab_description                     = '',
-        bool $tab_default                           = false,
+        string      $tab_slug,                              // required - 
+        string      $tab_title,                             // required - 
+        string      $tab_parent_page_slug,                  // required - 
+        string      $tab_description            = '',
+        bool        $tab_default                = false,
     ) : void
     {
         $tab = [
@@ -90,23 +90,34 @@ class DashboardSettings
     }
 
     public function add_section(
-        string $section_slug,                                                   // required - 
-        string $section_title,                                                  // required - 
-        string $section_parent_page_slug,                                       // required - 
-        string $section_parent_tab_slug             = '',
-        string $section_description                 = '',
-        string $section_ui                  = '',
+        string              $section_slug,                          // required - 
+        string              $section_title,                         // required - 
+        string              $section_parent_page_slug,              // required - 
+        string              $section_parent_tab_slug        = '',
+        string              $section_description            = '',
+        string | callable   $section_ui                     = '',
     ) : void
     {
-        $section_parent_page_slug = $this->get_clean_slug($section_parent_page_slug);
-        $section_parent_tab_slug = $section_parent_tab_slug == '' ? $section_parent_page_slug : $section_parent_page_slug . '_' . $section_parent_tab_slug;
+        $section_parent_page_slug   = $this->get_clean_slug($section_parent_page_slug);
+        $section_parent_tab_slug    = $section_parent_tab_slug == '' ? $section_parent_page_slug : $section_parent_page_slug . '_' . $section_parent_tab_slug;
+        $section_ui_template        = '';
+        if($section_ui == '')
+        {
+            $section_ui = [$this, 'render_after_section_header'];
+        }
+        if(\is_string($section_ui) && is_file($section_ui))
+        {
+            $section_ui_template   = $section_ui;
+            $section_ui            = [$this, 'render_after_section_header'];
+        }
         $section = [
             'section_slug'                  => $section_parent_page_slug . '_' . $section_slug,
             'section_title'                 => $section_title,
             'section_parent_page_slug'      => $section_parent_page_slug,
             'section_parent_tab_slug'       => $section_parent_tab_slug,
             'section_description'           => $section_description,
-            'section_ui'                    => $section_ui, // == '' ? [$this, 'render_section_header'] : $section_ui,
+            'section_ui'                    => $section_ui,
+            'section_ui_template'           => $section_ui_template,
         ];
         array_push($this->sections, $section);
         $this->init();
@@ -114,53 +125,65 @@ class DashboardSettings
 
     public function register_sections() : void
     {
+        global $wp_settings_sections;
         foreach($this->sections as $section)
         {
-            add_settings_section(
-                id          : $section['section_slug'],
-                title       : $section['section_title'],
-                callback    : $section['section_ui'],
-                page        : $section['section_parent_page_slug'],
-            );
+            // default WordPress key and values. this normally add by add_settings_section();
+            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['id']                         = $section['section_slug'];
+            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['title']                      = $section['section_title'];
+            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['callback']                   = $section['section_ui'];
+            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['page']                       = $section['section_parent_page_slug'];
+            // default PluginPress key and values
+            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['section_slug']               = $section['section_slug'];
+            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['section_title']              = $section['section_title'];
+            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['section_parent_page_slug']   = $section['section_parent_page_slug'];
+            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['section_parent_tab_slug']    = $section['section_parent_tab_slug'];
+            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['section_description']        = $section['section_description'];
+            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['section_ui']                 = $section['section_ui'];
+            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['section_ui_template']        = $section['section_ui_template'];
         }
     }
 
     public function add_option(
-        string $option_slug,                                                    // required - 
-        string $option_title,                                                   // required - 
-        string $option_parent_page_slug,                                        // required - 
-        bool $option_hidden                         = false,
-        bool $option_checked                        = false,
-        bool $option_disabled                       = false,
-        bool $option_required                       = false,
-        bool $option_readonly                       = false,
-        bool $option_show_in_rest                   = false,
-        bool $option_default_value                  = false,
-        bool $option_content_editable               = false,
-        string $option_ui                           = '',
-        string $option_min                          = '',
-        string $option_max                          = '',
-        string $option_list                         = '',
-        string $option_type                         = 'text',
-        string $option_style                        = '',
-        string $option_class                        = '',
-        string $option_label_for                    = '',
-        string $option_data_type                    = 'string',
-        string $option_max_length                   = '',
-        string $option_min_length                   = '',
-        string $option_placeholder                  = 'Enter option here',
-        string $option_description                  = '',
-        string $option_parent_tab_slug              = '',
-        string $option_parent_section_slug          = '',
-        string | array $option_sanitize_callback    = null,
+        string              $option_slug,                               // required - 
+        string              $option_title,                              // required - 
+        string              $option_parent_page_slug,                   // required - 
+        bool                $option_hidden                  = false,
+        bool                $option_checked                 = false,
+        bool                $option_disabled                = false,
+        bool                $option_required                = false,
+        bool                $option_readonly                = false,
+        bool                $option_show_in_rest            = false,
+        bool                $option_default_value           = false,
+        bool                $option_content_editable        = false,
+        string | callable   $option_ui                      = '',
+        string              $option_min                     = '',
+        string              $option_max                     = '',
+        string              $option_list                    = '',
+        string              $option_type                    = 'text',
+        string              $option_style                   = '',
+        string              $option_class                   = '',
+        string              $option_label_for               = '',
+        string              $option_data_type               = 'string',
+        string              $option_max_length              = '',
+        string              $option_min_length              = '',
+        string              $option_placeholder             = 'Enter option here',
+        string              $option_description             = '',
+        string              $option_parent_tab_slug         = '',
+        string              $option_parent_section_slug     = '',
+        string | callable   $option_sanitize_callback       = '',
     ) : void
     {
         $option_parent_page_slug    = $this->get_clean_slug($option_parent_page_slug);
         $option_ui_template         = '';
-        if(!is_array($option_ui) && is_file($option_ui))
+        if($option_ui == '')
         {
-            $option_ui_template = $option_ui;
-            $option_ui          = [$this, 'render_options'];
+            $option_ui = [$this, 'render_option_ui'];
+        }
+        if(\is_string($option_ui) && is_file($option_ui))
+        {
+            $option_ui_template   = $option_ui;
+            $option_ui            = [$this, 'render_option_ui'];
         }
         $option = [
             'option_slug'                   => $option_parent_page_slug . '_' . $option_slug,
@@ -174,7 +197,7 @@ class DashboardSettings
             'option_show_in_rest'           => $option_show_in_rest,
             'option_default_value'          => $option_default_value,
             'option_content_editable'       => $option_content_editable,
-            'option_ui'                     => $option_ui == '' ? [$this, 'render_options'] : $option_ui,
+            'option_ui'                     => $option_ui,
             'option_min'                    => $option_min,
             'option_max'                    => $option_max,
             'option_list'                   => $option_list,
@@ -189,7 +212,7 @@ class DashboardSettings
             'option_description'            => $option_description,
             'option_parent_tab_slug'        => $option_parent_tab_slug == '' ? $option_parent_page_slug : $option_parent_page_slug . '_' . $option_parent_tab_slug,
             'option_parent_section_slug'    => $option_parent_section_slug == '' ? 'default' : $option_parent_page_slug . '_' . $option_parent_section_slug,
-            'option_sanitize_callback'      => $option_sanitize_callback == null ? [$this, 'option_sanitize_callback'] : $option_sanitize_callback, 
+            'option_sanitize_callback'      => $option_sanitize_callback == '' ? [$this, 'option_sanitize_callback'] : $option_sanitize_callback, 
             'option_ui_template'            => $option_ui_template,
         ];
         array_push($this->options, $option);
@@ -201,9 +224,9 @@ class DashboardSettings
         foreach($this->options as $option)
         {
             register_setting(
-                option_group    : $option['option_parent_section_slug'],
+                option_group    : $option['option_parent_tab_slug'],
                 option_name     : $option['option_slug'],
-                args  : [
+                args            : [
                     'type'              => $option['option_data_type'],
                     'description'       => $option['option_description'],
                     'sanitize_callback' => $option['option_sanitize_callback'],
@@ -221,6 +244,34 @@ class DashboardSettings
             );
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     protected function get_current_page_tabs(array $current_page) : array | bool
     {

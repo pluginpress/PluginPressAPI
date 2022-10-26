@@ -78,12 +78,12 @@ class DashboardPages extends DashboardSettings
         $page_ui_template = '';
         if($page_ui == '')
         {
-            $page_ui = [$this, 'render_dashboard_page'];
+            $page_ui = [$this, 'render_dashboard_page_ui'];
         }
         if(\is_string($page_ui) && is_file($page_ui))
         {
             $page_ui_template   = $page_ui;
-            $page_ui            = [$this, 'render_dashboard_page'];
+            $page_ui            = [$this, 'render_dashboard_page_ui'];
         }
         $option_page = [
             'page_slug'             => $this->get_clean_slug($page_slug),
@@ -130,12 +130,12 @@ class DashboardPages extends DashboardSettings
         $page_ui_template = '';
         if($page_ui == '')
         {
-            $page_ui = [$this, 'render_dashboard_page'];
+            $page_ui = [$this, 'render_dashboard_page_ui'];
         }
         if(\is_string($page_ui) && is_file($page_ui))
         {
             $page_ui_template   = $page_ui;
-            $page_ui            = [$this, 'render_dashboard_page'];
+            $page_ui            = [$this, 'render_dashboard_page_ui'];
         }
         $menu_page = [
             'page_slug'             => $this->get_clean_slug($page_slug),
@@ -184,12 +184,12 @@ class DashboardPages extends DashboardSettings
         $page_ui_template = '';
         if($page_ui == '')
         {
-            $page_ui = [$this, 'render_dashboard_page'];
+            $page_ui = [$this, 'render_dashboard_page_ui'];
         }
         if(\is_string($page_ui) && is_file($page_ui))
         {
             $page_ui_template   = $page_ui;
-            $page_ui            = [$this, 'render_dashboard_page'];
+            $page_ui            = [$this, 'render_dashboard_page_ui'];
         }
         $submenu_page = [
             'page_slug'             => $this->get_clean_slug($page_slug),
@@ -250,14 +250,18 @@ class DashboardPages extends DashboardSettings
         {
             foreach($this->registered_pages as $key => $page)
             {
-                if($enqueue_script['page_slug'] == $page['page_slug'])
+                if($enqueue_script['page_slug'] == $page['page_slug'] || $enqueue_script['page_slug'] == 'default')
                 {
                     $this->_update_registered_page_enqueue_scripts(current_page : $key, enqueue_script : $enqueue_script);
                 }
-                if($enqueue_script['page_slug'] == 'default')
-                {
-                    $this->_update_registered_page_enqueue_scripts(current_page : $key, enqueue_script : $enqueue_script);
-                }
+                add_action(
+                    hook_name   : 'admin_head-' . $page['page_hook_suffix'],
+                    callback    : array($this, 'render_header_enqueued_scripts'),
+                );
+                add_action(
+                    hook_name   : 'admin_footer-' . $page['page_hook_suffix'],
+                    callback    : array($this, 'render_footer_enqueued_scripts'),
+                );
             }
         }
     }
