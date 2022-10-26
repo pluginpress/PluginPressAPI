@@ -23,16 +23,16 @@ trait DashboardUI
         echo '<div class="wrap" style="">';
         $this->render_page_header_section(current_page : $current_page);
         echo settings_errors();
-        $current_page_tabs = $this->get_current_page_tabs($current_page);
+        $current_page_tabs = $this->get_current_page_tabs(current_page : $current_page);
         if($current_page_tabs)
         {
-            $active_tab = $this->get_active_tab($current_page_tabs);
+            $active_tab = $this->get_active_tab(page_tabs : $current_page_tabs);
             if($active_tab)
             {
                 $this->render_tabs();
             }
         }
-        $this->render_sections($current_page['page_slug']);
+        $this->render_sections(parent : $current_page['page_slug']);
         $this->render_page_footer_section(current_page : $current_page);
         echo '<div class="clear"></div>';
         echo '</div>';
@@ -40,7 +40,7 @@ trait DashboardUI
 
     public function render_header_enqueued_scripts() : void
     {
-        $current_page       = $this->get_current_page();
+        $current_page = $this->get_current_page();
         if(isset($current_page['enqueue_on_page_head']) && !empty($current_page['enqueue_on_page_head']) && is_array($current_page['enqueue_on_page_head']))
         {
             foreach($current_page['enqueue_on_page_head'] as $script)
@@ -63,7 +63,7 @@ trait DashboardUI
 
     public function render_footer_enqueued_scripts() : void
     {
-        $current_page       = $this->get_current_page();
+        $current_page = $this->get_current_page();
         if(isset($current_page['enqueue_on_page_footer']) && !empty($current_page['enqueue_on_page_footer']) && is_array($current_page['enqueue_on_page_footer']))
         {
             foreach($current_page['enqueue_on_page_footer'] as $script)
@@ -120,8 +120,8 @@ trait DashboardUI
     public function render_tabs() : void
     {
         $current_page       = $this->get_current_page();
-        $current_page_tabs  = $this->get_current_page_tabs($current_page);
-        $active_tab         = $this->get_active_tab($current_page_tabs);
+        $current_page_tabs  = $this->get_current_page_tabs(current_page : $current_page);
+        $active_tab         = $this->get_active_tab(page_tabs : $current_page_tabs);
         // HOOK: Action - before_tabs_render_{PAGE_SLUG}
         do_action('before_tabs_render_' . $current_page['page_slug']);
         echo '<div class="" style="border:1px solid #c1c1c1;margin:20px 0px;">';
@@ -169,9 +169,9 @@ trait DashboardUI
         {
             return;
         }
-        $current_page_tabs  = $this->get_current_page_tabs($current_page);
-        $active_tab         = $this->get_active_tab($current_page_tabs);
-        $this->render_sections($active_tab['tab_slug']);
+        $current_page_tabs  = $this->get_current_page_tabs(current_page : $current_page);
+        $active_tab         = $this->get_active_tab(page_tabs :  $current_page_tabs);
+        $this->render_sections(parent : $active_tab['tab_slug']);
     }
 
     public function render_sections(string $parent) : void
@@ -219,7 +219,7 @@ trait DashboardUI
                 // HOOK: Action - after_section_header_render_{SECTION_SLUG}
                 do_action('after_section_header_render_' . $section['section_slug']);
                 echo '<table class="form-table" role="presentation">';
-                $this->do_settings_fields($current_page['page_slug'], $section['id']);
+                $this->render_settings_fields(parent_page : $current_page['page_slug'], parent_section : $section['id']);
                 echo '</table>';
                 echo '<div class="clear"></div>';
                 echo '</div>';
@@ -237,7 +237,7 @@ trait DashboardUI
         echo '</div>';
     }
 
-    public function render_after_section_header($section)
+    public function render_after_section_header(array $section) : void
     {
         if(!$section['section_ui_template'] == '' && \is_file($section['section_ui_template']))
         {
@@ -245,6 +245,38 @@ trait DashboardUI
             return;
         }
         echo '<p>' . $section['section_description'] . '</p>';
+    }
+
+    public function render_settings_fields(string $parent_page, string $parent_section) : void
+    {
+        global $wp_settings_fields;
+        if(!isset($wp_settings_fields[$parent_page][$parent_section]))
+        {
+            return;
+        }
+        foreach((array)$wp_settings_fields[$parent_page][$parent_section] as $field)
+        {
+            // HOOK: Filter before_option_render_{OPTION_SLUG}
+            $field['args'] = apply_filters('before_option_render_' . $field['args']['option_slug'], $field['args']);
+            echo '<tr class="' . esc_attr($field['args']['option_class']) . '" style="' . esc_attr($field['args']['option_style']) . '">';
+            echo '<th scope="row">';
+            // HOOK: Action - before_option_title_render_{OPTION_SLUG}
+            do_action('before_option_title_render_' . $field['args']['option_slug']);
+            echo '<label for="' . esc_attr($field['args']['option_label_for']) . '">' . $field['args']['option_title'] . '</label>';
+            // HOOK: Action - after_option_title_render_{OPTION_SLUG}
+            do_action('after_option_title_render_' . $field['args']['option_slug']);
+            echo '</br><small>' . $field['args']['option_description'] . '</small>';
+            echo '</th>';
+            echo '<td>';
+            call_user_func($field['callback'], $field['args']);
+            echo '</td>';
+            echo '</tr>';
+        }
+    }
+
+    public function render_option_ui(array $options) : void
+    {
+        echo UI::get($options);
     }
 
     public function render_page_footer_section(array $current_page) : void
@@ -279,161 +311,4 @@ trait DashboardUI
         // HOOK: Action - after_dashboard_page_footer_section_{PAGE_SLUG} - Admin page
         do_action('after_dashboard_page_footer_section_' . $current_page['page_slug']);
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    function do_settings_fields( $page, $section ) {
-        global $wp_settings_fields;
-    
-        if ( ! isset( $wp_settings_fields[ $page ][ $section ] ) ) {
-            return;
-        }
-    
-        foreach ( (array) $wp_settings_fields[ $page ][ $section ] as $field ) {
-            $class = '';
-    
-            if ( ! empty( $field['args']['class'] ) ) {
-                $class = ' class="' . esc_attr( $field['args']['class'] ) . '"';
-            }
-    
-            echo "<tr{$class}>";
-    
-            if ( ! empty( $field['args']['label_for'] ) ) {
-                echo '<th scope="row"><label for="' . esc_attr( $field['args']['label_for'] ) . '">' . $field['title'] . '</label></th>';
-            } else {
-                echo '<th scope="row">' . $field['title'] . '</th>';
-            }
-    
-            echo '<td>';
-            call_user_func( $field['callback'], $field['args'] );
-            echo '</td>';
-            echo '</tr>';
-        }
-    }
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // public function render_option_fields(array $current_page, array $parent_section = []) : void
-    // {
-    //     global $wp_settings_fields;
-
-    //     $current_page_sections = $this->get_registered_page_sections($current_page);
-    //     if($current_page_sections)
-    //     {
-    //         $section_parent_tab_slug = empty($parent_tab) ? $current_page['page_slug'] : $parent_tab['tab_slug'];
-
-
-
-    //     }
-    //     // if(!isset($wp_settings_fields[$current_page['page_slug']][$parent_section['section_slug']]))
-    //     // {
-    //     //     return;
-    //     // }
-
-    //     foreach($wp_settings_fields[$current_page['page_slug']][$parent_section['section_slug']] as $field)
-    //     {
-
-
-    //         // HOOK: Filter before_option_render_{OPTION_SLUG}
-    //         $field['args'] = apply_filters('before_option_render_' . $field[ 'args' ][ 'option_slug' ] , $field[ 'args' ] );
-
-    //         $class = '';
-    //         if( ! empty( $field[ 'args' ][ 'option_class' ] ) )
-    //         {
-    //             $class = 'class="' . esc_attr( $field[ 'args' ][ 'option_class' ] ) . '" valign="top"';
-    //         }
-    //         echo '<tr ' . $class . '><th scope="row"><div style="display:inline-block;vertical-align:top;">';
-    //         echo '<label for="' . esc_attr( $field[ 'args' ][ 'option_label_for' ] ) . '" style="vertical-align:baseline;">' . $field[ 'title' ] . '</label>';
-    //         if ( isset( $field[ 'args' ][ 'option_help_message' ] ) )
-    //         {
-    //             $icon_style = ( isset( $field[ 'args' ][ 'option_help_icon_style' ] ) ? $field[ 'args' ][ 'option_help_icon_style' ] : '' );
-    //             $icon = ( isset( $field[ 'args' ][ 'option_help_icon' ] ) ? $field[ 'args' ][ 'option_help_icon' ] : 'dashicons dashicons-editor-help' );
-    //             echo '<div class="pluginpress_tooltip"><span style="vertical-align:baseline;margin-left:5px;' . $icon_style .'">';
-    //             echo '<i class="' . $icon . '" aria-hidden="true"></i></span><span class="pluginpress_tooltip_text">' .
-    //             $field[ 'args' ][ 'option_help_message' ] . '</span>';
-    //             echo '</div>';
-    //         }
-    //         echo '</div></th><td>';
-    //         call_user_func( $field[ 'callback' ], $field[ 'args' ] );
-    //         echo '</td></tr>';
-    //     }
-    // }
-
-    // public function render_settings_fields($page_slug, $section_slug) : void
-    // {
-    //     global $wp_settings_fields;
-
-    //     if(!isset($wp_settings_fields[$page_slug][$section_slug]))
-    //     {
-    //         return;
-    //     }
-    //     foreach((array) $wp_settings_fields[$page_slug][$section_slug] as $field)
-    //     {
-    //     //             print('<pre>');
-    //     // var_dump($field);
-    //     // print('</pre>');
-    //     // die;
-
-    //         // HOOK: Filter before_option_render_{OPTION_SLUG}
-    //         $field['args'] = apply_filters('before_option_render_' . $field[ 'args' ][ 'option_slug' ] , $field[ 'args' ] );
-
-    //         $class = '';
-    //         if( ! empty( $field[ 'args' ][ 'option_class' ] ) )
-    //         {
-    //             $class = 'class="' . esc_attr( $field[ 'args' ][ 'option_class' ] ) . '" valign="top"';
-    //         }
-    //         echo '<tr ' . $class . '><th scope="row"><div style="display:inline-block;vertical-align:top;">';
-    //         echo '<label for="' . esc_attr( $field[ 'args' ][ 'option_label_for' ] ) . '" style="vertical-align:baseline;">' . $field[ 'title' ] . '</label>';
-    //         if ( isset( $field[ 'args' ][ 'option_help_message' ] ) )
-    //         {
-    //             $icon_style = ( isset( $field[ 'args' ][ 'option_help_icon_style' ] ) ? $field[ 'args' ][ 'option_help_icon_style' ] : '' );
-    //             $icon = ( isset( $field[ 'args' ][ 'option_help_icon' ] ) ? $field[ 'args' ][ 'option_help_icon' ] : 'dashicons dashicons-editor-help' );
-    //             echo '<div class="pluginpress_tooltip"><span style="vertical-align:baseline;margin-left:5px;' . $icon_style .'">';
-    //             echo '<i class="' . $icon . '" aria-hidden="true"></i></span><span class="pluginpress_tooltip_text">' .
-    //             $field[ 'args' ][ 'option_help_message' ] . '</span>';
-    //             echo '</div>';
-    //         }
-    //         echo '</div></th><td>';
-    //         call_user_func( $field[ 'callback' ], $field[ 'args' ] );
-    //         echo '</td></tr>';
-    //     }
-    // }
-
-    public function render_option_ui($options) : void
-    {
-        echo UI::get($options);
-        echo '<p>' . $options['option_description'] . '</p>';
-    }
-
 }

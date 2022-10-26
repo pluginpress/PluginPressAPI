@@ -24,7 +24,7 @@ class DashboardSettings
     {
     }
 
-    public function init()
+    public function init() : void
     {
         if(!empty($this->tabs))
         {
@@ -245,34 +245,6 @@ class DashboardSettings
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     protected function get_current_page_tabs(array $current_page) : array | bool
     {
         if(empty($this->tabs))
@@ -331,10 +303,6 @@ class DashboardSettings
         return $page_options;
     }
 
-
-
-
-
     protected function get_active_tab(array $page_tabs) : array | bool
     {
         $active_tab_slug = (isset($_GET['tab']) ? $_GET['tab'] : null);
@@ -370,72 +338,6 @@ class DashboardSettings
         }
         return $active_tab;
     }
-
-
-
-
-
-
-    // protected function get_tab_setting_sections($current_page, $current_tab)
-    // {
-        // global $wp_settings_sections;
-        // if(!isset($wp_settings_sections[$current_page['page_slug']]))
-        // {
-        //     return;
-        // }
-        // print('<pre>');
-        // var_dump($current_tab);
-        // print('</pre>');
-        // die;
-        // foreach($this->sections as $section)
-        // {
-
-            // if(!$active_tab['tab_slug'] == $section['section_parent_tab_slug'])
-            // {
-            //     continue;
-            // }
-
-            // foreach((array) $wp_settings_sections[$current_page['page_slug']] as $registered_section)
-            // {
-            //     if($section['section_slug'] == $registered_section['id'])
-            //     {
-            //         // HOOK: Filter before_section_render_{SECTION_SLUG}
-            //         $section = apply_filters('before_section_render_' . $section['section_slug'] , $section);
-            //         // TODO: $section['section_enabled'] == false ? continue; : null;
-
-            //         echo '<h2>';
-            //         // HOOK: Action - before_section_title_render_{SECTION_SLUG}
-            //         do_action('before_section_title_render_' . $section['section_slug']);
-            //         echo $section['section_title'];
-            //         // HOOK: Action - after_section_title_render_{SECTION_SLUG}
-            //         do_action('after_section_title_render_' . $section['section_slug']);
-            //         echo '</h2>';
-            //         if(isset($section['section_ui']))
-            //         {
-            //             \is_array($section['section_ui']) ? call_user_func($section['section_ui'], $section) : null;
-            //             \is_file($section['section_ui']) ? include_once $section['section_ui'] : null;
-            //             \is_string($section['section_ui']) ? printf($section['section_ui']) : null;
-            //         }
-            //         else
-            //         {
-            //             echo '<p>' . $section['section_description'] . '</p>';
-            //         }
-            //         if(
-            //             !isset($wp_settings_fields) ||
-            //             !isset($wp_settings_fields[$current_page['page_slug']]) ||
-            //             !isset($wp_settings_fields[$current_page['page_slug']][$section['section_slug']])
-            //         )
-            //         {
-            //             continue;
-            //         }
-            //         echo '<table class="form-table" role="presentation">';
-            //         $this->render_settings_fields($current_page['page_slug'], $section['section_slug']);
-            //         echo '</table>';
-            //     }
-            // }
-        // }
-
-    // }
 
     // TODO: implement the user input data sanitization function for input fields
     public function option_sanitize_callback($data)
