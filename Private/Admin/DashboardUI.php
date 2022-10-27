@@ -7,7 +7,7 @@ use PluginPress\PluginPressAPI\UI\UI;
 // If this file is called directly, abort. for the security purpose.
 if(!defined('WPINC'))
 {
-    die;
+    die('Unauthorized access..!');
 }
 
 trait DashboardUI
@@ -41,7 +41,11 @@ trait DashboardUI
     public function render_header_enqueued_scripts() : void
     {
         $current_page = $this->get_current_page();
-        if(isset($current_page['enqueue_on_page_head']) && !empty($current_page['enqueue_on_page_head']) && is_array($current_page['enqueue_on_page_head']))
+        if(
+            isset($current_page['enqueue_on_page_head']) &&
+            !empty($current_page['enqueue_on_page_head']) &&
+            is_array($current_page['enqueue_on_page_head'])
+        )
         {
             foreach($current_page['enqueue_on_page_head'] as $script)
             {
@@ -64,7 +68,11 @@ trait DashboardUI
     public function render_footer_enqueued_scripts() : void
     {
         $current_page = $this->get_current_page();
-        if(isset($current_page['enqueue_on_page_footer']) && !empty($current_page['enqueue_on_page_footer']) && is_array($current_page['enqueue_on_page_footer']))
+        if(
+            isset($current_page['enqueue_on_page_footer']) &&
+            !empty($current_page['enqueue_on_page_footer']) &&
+            is_array($current_page['enqueue_on_page_footer'])
+        )
         {
             foreach($current_page['enqueue_on_page_footer'] as $script)
             {
@@ -90,14 +98,15 @@ trait DashboardUI
         do_action('before_dashboard_page_header_section_' . $this->plugin_options->get('plugin_slug'));
         // HOOK: Action - before_dashboard_page_header_section_{PAGE_SLUG} - dashboard page
         do_action('before_dashboard_page_header_section_' . $current_page['page_slug']);
-
         echo '<div class="" style="">';
         echo '<div class="" style="padding:5px;">';
         // HOOK: Action - before_dashboard_page_title_{PLUGIN_SLUG} - All dashboard page
         do_action('before_dashboard_page_title_' . $this->plugin_options->get('plugin_slug'));
         // HOOK: Action - before_dashboard_page_title_{PAGE_SLUG} - dashboard page
         do_action('before_dashboard_page_title_' . $current_page['page_slug']);
-        echo '<h1 class="wp-heading-inline">' . $this->plugin_options->get('plugin_name') . ' | ' . $current_page['page_title'] . '</h2>';
+        // HOOK: Filter - dashboard_page_title_{PAGE_SLUG} - dashboard page
+        $page_title = '<h1 class="wp-heading-inline">' . $this->plugin_options->get('plugin_name') . ' | ' . $current_page['page_title'] . '</h2>';
+        echo apply_filters('dashboard_page_title_' . $current_page['page_slug'], $page_title);
         // HOOK: Action - after_dashboard_page_title_{PLUGIN_SLUG} - All dashboard page
         do_action('after_dashboard_page_title_' . $this->plugin_options->get('plugin_slug'));
         // HOOK: Action - after_dashboard_page_title_{PAGE_SLUG} - dashboard page
@@ -176,13 +185,14 @@ trait DashboardUI
 
     public function render_sections(string $parent) : void
     {
+        //TODO: render sections that don't have tab assigned.
         global $wp_settings_sections, $wp_settings_fields;
         $current_page = $this->get_current_page();
         if(!isset($wp_settings_sections) || !isset($wp_settings_sections[$current_page['page_slug']]))
         {
             return;
         }
-        echo '<div class="" style="border:1px solid #c1c1c1; padding:5px;">';
+        echo '<div class="" style="border:1px solid #c1c1c1; padding:5px;background-color:#D0D2D5;">';
         // HOOK: Action - before_sections_render_{SECTION_GROUP_SLUG} page_slug OR tab_slug
         do_action('before_sections_render_' . $parent);
         echo '<form method="post" action="options.php">';
@@ -218,9 +228,7 @@ trait DashboardUI
                 }
                 // HOOK: Action - after_section_header_render_{SECTION_SLUG}
                 do_action('after_section_header_render_' . $section['section_slug']);
-                echo '<table class="form-table" role="presentation">';
                 $this->render_settings_fields(parent_page : $current_page['page_slug'], parent_section : $section['id']);
-                echo '</table>';
                 echo '<div class="clear"></div>';
                 echo '</div>';
             }
@@ -247,40 +255,47 @@ trait DashboardUI
         echo '<p>' . $section['section_description'] . '</p>';
     }
 
-    public function render_settings_fields(string $parent_page, string $parent_section) : void
+    public function render_settings_fields(string $parent_page, string $parent_section = '') : void
     {
+        // TODO: render fields that don't have sections assigned.
         global $wp_settings_fields;
-        if(!isset($wp_settings_fields[$parent_page][$parent_section]))
+        if(!$parent_section == '' && isset($wp_settings_fields[$parent_page][$parent_section]))
         {
-            return;
-        }
-        foreach((array)$wp_settings_fields[$parent_page][$parent_section] as $field)
-        {
-            // HOOK: Filter before_option_render_{OPTION_SLUG}
-            $field['args'] = apply_filters('before_option_render_' . $field['args']['option_slug'], $field['args']);
-            echo '<tr class="' . esc_attr($field['args']['option_class']) . '" style="' . esc_attr($field['args']['option_style']) . '">';
-            echo '<th scope="row">';
-            // HOOK: Action - before_option_title_render_{OPTION_SLUG}
-            do_action('before_option_title_render_' . $field['args']['option_slug']);
-            echo '<label for="' . esc_attr($field['args']['option_label_for']) . '">' . $field['args']['option_title'] . '</label>';
-            // HOOK: Action - after_option_title_render_{OPTION_SLUG}
-            do_action('after_option_title_render_' . $field['args']['option_slug']);
-            echo '</br><small>' . $field['args']['option_description'] . '</small>';
-            echo '</th>';
-            echo '<td>';
-            call_user_func($field['callback'], $field['args']);
-            echo '</td>';
-            echo '</tr>';
+            echo '<table class="form-table" role="presentation">';
+            foreach((array)$wp_settings_fields[$parent_page][$parent_section] as $field)
+            {
+                // HOOK: Filter before_option_render_{OPTION_SLUG}
+                $field['args'] = apply_filters('before_option_render_' . $field['args']['option_slug'], $field['args']);
+                echo '<tr class="' . esc_attr($field['args']['option_class']) . '" style="' . esc_attr($field['args']['option_style']) . '">';
+                echo '<th scope="row">';
+                // HOOK: Action - before_option_title_render_{OPTION_SLUG}
+                do_action('before_option_title_render_' . $field['args']['option_slug']);
+                echo '<label for="' . esc_attr($field['args']['option_label_for']) . '">' . $field['args']['option_title'] . '</label>';
+                // HOOK: Action - after_option_title_render_{OPTION_SLUG}
+                do_action('after_option_title_render_' . $field['args']['option_slug']);
+                echo '</br><small>' . $field['args']['option_description'] . '</small>';
+                echo '</th>';
+                echo '<td>';
+                call_user_func($field['callback'], $field['args']);
+                echo '</td>';
+                echo '</tr>';
+            }
+            echo '</table>';
         }
     }
 
     public function render_option_ui(array $options) : void
     {
-        echo UI::get($options);
+        echo UI::get_element($options);
     }
 
     public function render_page_footer_section(array $current_page) : void
     {
+        $_stars = '';
+        for($i = 0; $i<5; $i++)
+        {
+            $_stars .= '<span class="dashicons-before dashicons-star-half">';
+        }
         // HOOK: Action - before_dashboard_page_footer_section_{PLUGIN_SLUG} - All Admin page
         do_action('before_dashboard_page_footer_section_' . $this->plugin_options->get('plugin_slug'));
         // HOOK: Action - before_dashboard_page_footer_section_{PAGE_SLUG} - Admin page
@@ -295,8 +310,7 @@ trait DashboardUI
                         {$this->plugin_options->get('plugin_name')}</a>. - Please consider leaving your valued <a href="
                         {$this->plugin_options->get('plugin_feedback_url')}" title="{$this->plugin_options->get('plugin_name')}">feedback</a> <a href="
                         {$this->plugin_options->get('plugin_feedback_url')}" title="{$this->plugin_options->get('plugin_name')}" style="color:#D97D0D;
-                        "><span class="dashicons-before dashicons-star-half"><span class="dashicons-before dashicons-star-half"><span class="dashicons-before dashicons-star-half"><span class="dashicons-before dashicons-star-half"><span class="dashicons-before dashicons-star-half">
-                        </a>
+                        ">{$_stars}</a>
                     </span>
                 </p>
             </i>

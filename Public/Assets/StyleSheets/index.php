@@ -1,8 +1,6 @@
 <?php
-/**
- * If this file is called directly, abort! for security purposes.
- */
 
+// If this directory is accessed directly, abort. for the security purpose.
 if(!defined('WPINC'))
 {
     die('Unauthorized access..!');

@@ -7,7 +7,7 @@ use PluginPress\PluginPressAPI\PluginOptions\PluginOptions;
 // If this file is called directly, abort. for the security purpose.
 if(!defined('WPINC'))
 {
-    die;
+    die('Unauthorized access..!');
 }
 
 class DashboardPages extends DashboardSettings
@@ -20,7 +20,7 @@ class DashboardPages extends DashboardSettings
 
     public function __construct(private PluginOptions $plugin_options)
     {
-        parent::__construct($plugin_options);
+        parent::__construct(plugin_options : $plugin_options);
         $this->_add_default_admin_enqueue_scripts();
     }
 
@@ -86,7 +86,7 @@ class DashboardPages extends DashboardSettings
             $page_ui            = [$this, 'render_dashboard_page_ui'];
         }
         $option_page = [
-            'page_slug'             => $this->get_clean_slug($page_slug),
+            'page_slug'             => $this->get_clean_slug(slug : $page_slug),
             'page_title'            => $page_title,
             'page_position'         => $page_position,
             'page_menu_title'       => $page_menu_title == '' ? $page_title : $page_menu_title,
@@ -112,7 +112,7 @@ class DashboardPages extends DashboardSettings
                 callback        : $page['page_ui'],
                 position        : $page['page_position'],
             );
-            $this->_update_registered_page_suffix($page);
+            $this->_update_registered_page_suffix(page : $page);
         }
     }
 
@@ -138,7 +138,7 @@ class DashboardPages extends DashboardSettings
             $page_ui            = [$this, 'render_dashboard_page_ui'];
         }
         $menu_page = [
-            'page_slug'             => $this->get_clean_slug($page_slug),
+            'page_slug'             => $this->get_clean_slug(slug : $page_slug),
             'page_title'            => $page_title,
             'page_position'         => $page_position,
             'page_icon_url'         => $page_icon_url == '' ? 'dashicons-admin-generic' : $page_icon_url,
@@ -166,7 +166,7 @@ class DashboardPages extends DashboardSettings
                 icon_url        : $page['page_icon_url'],
                 position        : $page['page_position'],
             );
-            $this->_update_registered_page_suffix($page);
+            $this->_update_registered_page_suffix(page :  $page);
         }
     }
 
@@ -192,9 +192,9 @@ class DashboardPages extends DashboardSettings
             $page_ui            = [$this, 'render_dashboard_page_ui'];
         }
         $submenu_page = [
-            'page_slug'             => $this->get_clean_slug($page_slug),
+            'page_slug'             => $this->get_clean_slug(slug : $page_slug),
             'page_title'            => $page_title,
-            'page_parent_slug'      => $this->get_clean_slug($page_parent_slug),
+            'page_parent_slug'      => $this->get_clean_slug(slug : $page_parent_slug),
             'page_position'         => $page_position,
             'page_menu_title'       => $page_menu_title == '' ? $page_title : $page_menu_title,
             'page_description'      => $page_description,
@@ -220,7 +220,7 @@ class DashboardPages extends DashboardSettings
                 callback        : $page['page_ui'],
                 position        : $page['page_position']
             );
-            $this->_update_registered_page_suffix($page);
+            $this->_update_registered_page_suffix(page : $page);
         }
     }
 
@@ -233,7 +233,7 @@ class DashboardPages extends DashboardSettings
     ) : void
     {
         $enqueue_script = [
-            'enqueue_script_slug'       => $this->get_clean_slug($enqueue_script_slug),
+            'enqueue_script_slug'       => $this->get_clean_slug(slug : $enqueue_script_slug),
             'enqueue_script_path'       => $enqueue_script_path,
             'enqueue_script_type'       => $enqueue_script_type,
             'page_slug'                 => $page_slug == '' ? 'default' : $page_slug,
@@ -288,7 +288,7 @@ class DashboardPages extends DashboardSettings
                 hook_name       : 'admin_head',
                 callback        : function()
                     {
-                        remove_submenu_page('index.php', $this->get_clean_slug('welcome_page'));
+                        remove_submenu_page(menu_slug : 'index.php', submenu_slug : $this->get_clean_slug('welcome_page'));
                     },
                 priority        : 10,
                 accepted_args   : 1,
@@ -305,7 +305,7 @@ class DashboardPages extends DashboardSettings
                     if(get_transient($this->plugin_options->get('plugin_slug') . '_welcome_page_auto_redirect') == true)
                     {
                         delete_transient($this->plugin_options->get('plugin_slug') . '_welcome_page_auto_redirect');
-                        wp_safe_redirect(admin_url('index.php?page=' . $this->get_clean_slug('welcome_page')));
+                        wp_safe_redirect(admin_url('index.php?page=' . $this->get_clean_slug(slug : 'welcome_page')));
                         exit;
                     }
                     return;

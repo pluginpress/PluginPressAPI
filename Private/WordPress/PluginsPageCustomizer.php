@@ -7,7 +7,7 @@ use PluginPress\PluginPressAPI\PluginOptions\PluginOptions;
 // If this file is called directly, abort. for the security purpose.
 if(!defined('WPINC'))
 {
-    die;
+    die('Unauthorized access..!');
 }
 
 class PluginsPageCustomizer
@@ -62,10 +62,10 @@ class PluginsPageCustomizer
                     }
                     else
                     {
-                        isset($profile['name']) ? $profile_name = $profile['name'] : $profile_name = rand(2, 12);
-                        isset($profile['title']) ? $profile_title = $profile['title'] : $profile_title = 'Link';
-                        isset($profile['color']) ? $profile_color = $profile['color'] : $profile_color = '#D97D0D';
-                        isset($profile['icon']) ? $profile_icon = $profile['icon'] : $profile_icon = 'dashicons-before dashicons-admin-generic';
+                        isset($profile['name'])     ? $profile_name = $profile['name']      : $profile_name = rand(2, 12);
+                        isset($profile['title'])    ? $profile_title = $profile['title']    : $profile_title = 'Link';
+                        isset($profile['color'])    ? $profile_color = $profile['color']    : $profile_color = '#D97D0D';
+                        isset($profile['icon'])     ? $profile_icon = $profile['icon']      : $profile_icon = 'dashicons-before dashicons-admin-generic';
                         $social_links = array_merge(
                             $social_links,
                             [
@@ -85,9 +85,9 @@ class PluginsPageCustomizer
     {
         if($this->plugin_options->get('plugin_update_notice_url') != false)
         {
-            echo '<br/>';
             $curl = curl_init($this->plugin_options->get('plugin_update_notice_url'));
-            curl_setopt($curl, CURLOPT_USERAGENT, 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7) AppleWebKit/534.48.3 (KHTML, like Gecko) Version/5.1 Safari/534.48.3');
+            $_user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7) AppleWebKit/534.48.3 (KHTML, like Gecko) Version/5.1 Safari/534.48.3';
+            curl_setopt($curl, CURLOPT_USERAGENT, $_user_agent);
             curl_setopt($curl, CURLOPT_FAILONERROR, true);
             $update_notice = strval(curl_exec($curl));
             if(curl_errno($curl))

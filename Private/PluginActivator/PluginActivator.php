@@ -4,10 +4,7 @@ namespace PluginPress\PluginPressAPI\PluginActivator;
 
 use PluginPress\PluginPressAPI\PluginOptions\PluginOptions;
 
-/**
- * If this file is called directly, abort! for security purposes.
- */
-
+// If this file is called directly, abort. for the security purpose.
 if(!defined('WPINC'))
 {
     die('Unauthorized access..!');

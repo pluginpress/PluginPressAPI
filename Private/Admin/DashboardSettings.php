@@ -8,7 +8,7 @@ use PluginPress\PluginPressAPI\Traits\Utilities;
 // If this file is called directly, abort. for the security purpose.
 if(!defined('WPINC'))
 {
-    die;
+    die('Unauthorized access..!');
 }
 
 class DashboardSettings
@@ -30,7 +30,7 @@ class DashboardSettings
         {
             add_action(
                 hook_name       : 'admin_init',
-                callback        : array($this,'register_tabs'),
+                callback        : array($this, 'register_tabs'),
                 priority        : 11,
                 accepted_args   : 1,
             );
@@ -39,7 +39,7 @@ class DashboardSettings
         {
             add_action(
                 hook_name       : 'admin_init',
-                callback        : array($this,'register_sections'),
+                callback        : array($this, 'register_sections'),
                 priority        : 12,
                 accepted_args   : 1,
             );
@@ -48,7 +48,7 @@ class DashboardSettings
         {
             add_action(
                 hook_name       : 'admin_init',
-                callback        : array($this,'register_options'),
+                callback        : array($this, 'register_options'),
                 priority        : 13,
                 accepted_args   : 1,
             );
@@ -64,9 +64,9 @@ class DashboardSettings
     ) : void
     {
         $tab = [
-            'tab_slug'                  => $this->get_clean_slug($tab_parent_page_slug) . '_' . $tab_slug,
+            'tab_slug'                  => $this->get_clean_slug(slug : $tab_parent_page_slug) . '_' . $tab_slug,
             'tab_title'                 => $tab_title,
-            'tab_parent_page_slug'      => $this->get_clean_slug($tab_parent_page_slug),
+            'tab_parent_page_slug'      => $this->get_clean_slug(slug : $tab_parent_page_slug),
             'tab_description'           => $tab_description,
             'tab_default'               => $tab_default,
         ];
@@ -98,7 +98,7 @@ class DashboardSettings
         string | callable   $section_ui                     = '',
     ) : void
     {
-        $section_parent_page_slug   = $this->get_clean_slug($section_parent_page_slug);
+        $section_parent_page_slug   = $this->get_clean_slug(slug : $section_parent_page_slug);
         $section_parent_tab_slug    = $section_parent_tab_slug == '' ? $section_parent_page_slug : $section_parent_page_slug . '_' . $section_parent_tab_slug;
         $section_ui_template        = '';
         if($section_ui == '')
@@ -128,19 +128,25 @@ class DashboardSettings
         global $wp_settings_sections;
         foreach($this->sections as $section)
         {
+            $parent_slug   = $section['section_parent_page_slug'];
+            $section_slug  = $section['section_slug'];
+            if(!isset($wp_settings_sections[$parent_slug][$section_slug]))
+            {
+                $wp_settings_sections[$parent_slug][$section_slug] = [];
+            }
             // default WordPress key and values. this normally add by add_settings_section();
-            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['id']                         = $section['section_slug'];
-            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['title']                      = $section['section_title'];
-            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['callback']                   = $section['section_ui'];
-            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['page']                       = $section['section_parent_page_slug'];
+            $wp_settings_sections[$parent_slug][$section_slug]['id']                         = $section['section_slug'];
+            $wp_settings_sections[$parent_slug][$section_slug]['title']                      = $section['section_title'];
+            $wp_settings_sections[$parent_slug][$section_slug]['callback']                   = $section['section_ui'];
+            $wp_settings_sections[$parent_slug][$section_slug]['page']                       = $section['section_parent_page_slug'];
             // default PluginPress key and values
-            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['section_slug']               = $section['section_slug'];
-            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['section_title']              = $section['section_title'];
-            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['section_parent_page_slug']   = $section['section_parent_page_slug'];
-            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['section_parent_tab_slug']    = $section['section_parent_tab_slug'];
-            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['section_description']        = $section['section_description'];
-            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['section_ui']                 = $section['section_ui'];
-            $wp_settings_sections[$section['section_parent_page_slug']][$section['section_slug']]['section_ui_template']        = $section['section_ui_template'];
+            $wp_settings_sections[$parent_slug][$section_slug]['section_slug']               = $section['section_slug'];
+            $wp_settings_sections[$parent_slug][$section_slug]['section_title']              = $section['section_title'];
+            $wp_settings_sections[$parent_slug][$section_slug]['section_parent_page_slug']   = $section['section_parent_page_slug'];
+            $wp_settings_sections[$parent_slug][$section_slug]['section_parent_tab_slug']    = $section['section_parent_tab_slug'];
+            $wp_settings_sections[$parent_slug][$section_slug]['section_description']        = $section['section_description'];
+            $wp_settings_sections[$parent_slug][$section_slug]['section_ui']                 = $section['section_ui'];
+            $wp_settings_sections[$parent_slug][$section_slug]['section_ui_template']        = $section['section_ui_template'];
         }
     }
 
@@ -174,7 +180,7 @@ class DashboardSettings
         string | callable   $option_sanitize_callback       = '',
     ) : void
     {
-        $option_parent_page_slug    = $this->get_clean_slug($option_parent_page_slug);
+        $option_parent_page_slug    = $this->get_clean_slug(slug : $option_parent_page_slug);
         $option_ui_template         = '';
         if($option_ui == '')
         {
@@ -204,15 +210,19 @@ class DashboardSettings
             'option_type'                   => $option_type,
             'option_style'                  => $option_style,
             'option_class'                  => $option_class,
-            'option_label_for'              => $option_label_for == '' ? $option_parent_page_slug . '_' . $option_slug : $option_parent_page_slug . '_' . $option_label_for,
+            'option_label_for'              => $option_label_for == ''
+                                                ? $option_parent_page_slug . '_' . $option_slug
+                                                : $option_parent_page_slug . '_' . $option_label_for,
             'option_data_type'              => $option_data_type,
             'option_max_length'             => $option_max_length,
             'option_min_length'             => $option_min_length,
             'option_placeholder'            => $option_placeholder,
             'option_description'            => $option_description,
-            'option_parent_tab_slug'        => $option_parent_tab_slug == '' ? $option_parent_page_slug : $option_parent_page_slug . '_' . $option_parent_tab_slug,
+            'option_parent_tab_slug'        => $option_parent_tab_slug == ''
+                                                ? $option_parent_page_slug
+                                                : $option_parent_page_slug . '_' . $option_parent_tab_slug,
             'option_parent_section_slug'    => $option_parent_section_slug == '' ? 'default' : $option_parent_page_slug . '_' . $option_parent_section_slug,
-            'option_sanitize_callback'      => $option_sanitize_callback == '' ? [$this, 'option_sanitize_callback'] : $option_sanitize_callback, 
+            'option_sanitize_callback'      => $option_sanitize_callback == '' ? [$this, 'option_sanitize_callback'] : $option_sanitize_callback,
             'option_ui_template'            => $option_ui_template,
         ];
         array_push($this->options, $option);
@@ -342,7 +352,6 @@ class DashboardSettings
     // TODO: implement the user input data sanitization function for input fields
     public function option_sanitize_callback($data)
     {
-        return $data;
+        return esc_html__($data, $this->plugin_options->get('plugin_text_domain'));
     }
-
 }

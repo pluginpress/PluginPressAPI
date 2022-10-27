@@ -5,7 +5,7 @@ namespace PluginPress\PluginPressAPI\Traits;
 // If this file is called directly, abort. for the security purpose.
 if(!defined('WPINC'))
 {
-    die;
+    die('Unauthorized access..!');
 }
 
 trait Utilities
@@ -23,5 +23,4 @@ trait Utilities
         }
         return $this->plugin_options->get('plugin_slug') . '_' . $slug;
     }
-
 }
